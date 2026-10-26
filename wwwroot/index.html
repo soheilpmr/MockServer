@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Mock Server & API Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        .gradient-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        .gradient-btn:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen py-10 px-4 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-5xl mx-auto space-y-6">
+
+        <!-- Top Navigation / Header -->
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-indigo-600 text-white font-black text-xl shadow-md shadow-indigo-200">
+                        ⚡
+                    </span>
+                    <div>
+                        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">Dynamic Mock Server Studio</h1>
+                        <p class="text-xs font-medium text-slate-500">Generate runtime C# APIs with real-time Excel mock datasets, input parameter filters & Swagger hot-reloading</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/swagger" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition border border-indigo-200/60 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    Open Swagger UI
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Form -->
+        <form id="apiForm" class="space-y-6">
+
+            <!-- Card 1: Endpoint Settings -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">1. Endpoint Specification</h2>
+                        <p class="text-xs text-slate-500">Configure route path, HTTP method, and response format.</p>
+                    </div>
+                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Step 1</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">API Name</label>
+                        <input type="text" id="apiName" required placeholder="e.g. GetProductInfo" value="GetProductInfo"
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Route Path</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm font-mono">/</span>
+                            <input type="text" id="route" required placeholder="api/products/GetProductInfo" value="api/products/GetProductInfo"
+                                class="w-full pl-7 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-medium focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">HTTP Method</label>
+                        <select id="httpMethod" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                            <option value="GET" selected>GET (Query Params)</option>
+                            <option value="POST">POST (JSON Body)</option>
+                            <option value="PUT">PUT (JSON Body)</option>
+                            <option value="DELETE">DELETE (Query Params)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Response Format Picker -->
+                <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-indigo-900 mb-1.5">Response Structure Format</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <label class="relative flex items-center p-3 rounded-xl border border-indigo-200 bg-white cursor-pointer hover:border-indigo-400 transition">
+                            <input type="radio" name="responseFormat" value="SingleObject" checked class="text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-3">
+                                <span class="block text-sm font-bold text-slate-800">Single Object</span>
+                                <span class="block text-xs text-slate-500">Returns <code>{ ... }</code> directly (or 404). Best for GetById/Info!</span>
+                            </div>
+                        </label>
+                        <label class="relative flex items-center p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-indigo-400 transition">
+                            <input type="radio" name="responseFormat" value="PaginatedList" class="text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-3">
+                                <span class="block text-sm font-bold text-slate-800">Paginated List</span>
+                                <span class="block text-xs text-slate-500"><code>{ TotalRecords, Page, Data: [...] }</code></span>
+                            </div>
+                        </label>
+                        <label class="relative flex items-center p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:border-indigo-400 transition">
+                            <input type="radio" name="responseFormat" value="DirectArray" class="text-indigo-600 focus:ring-indigo-500">
+                            <div class="ml-3">
+                                <span class="block text-sm font-bold text-slate-800">Direct Array</span>
+                                <span class="block text-xs text-slate-500">Returns raw array <code>[ {...}, {...} ]</code></span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Response Properties Schema -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">2. Response Properties (Excel Columns)</h2>
+                        <p class="text-xs text-slate-500">Define the columns to read from the Excel file (must match Excel header row text).</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="loadProductPreset()" class="text-xs px-3 py-1.5 font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition">Load Product Preset</button>
+                        <button type="button" onclick="addPropertyRow()" class="text-xs px-3 py-1.5 font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition">+ Add Column</button>
+                    </div>
+                </div>
+
+                <div id="propertiesContainer" class="space-y-2.5">
+                    <!-- Dynamic column rows will be injected here -->
+                </div>
+            </div>
+
+            <!-- Card 3: Request Inputs & Filtering Conditions (THE NEW FEATURE) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-bold text-slate-800">3. Request Parameters & Input Conditions</h2>
+                            <span class="px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-md bg-emerald-100 text-emerald-800 tracking-wide">Live Filtering</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Callers can pass inputs (e.g. <code>productId = 1</code>). The server applies conditions to match and return the wanted record!</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="autoGenerateFiltersFromColumns()" class="text-xs px-3 py-1.5 font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded-lg transition flex items-center gap-1.5">
+                            ⚡ Auto-Create Filter from Columns
+                        </button>
+                        <button type="button" onclick="addParameterRow()" class="text-xs px-3 py-1.5 font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition">+ Add Input Parameter</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3 text-xs text-slate-600 flex items-start gap-2.5">
+                    <span class="text-indigo-600 font-bold text-sm">💡</span>
+                    <div>
+                        <span class="font-semibold text-slate-800">How it works:</span> If you configure an input parameter <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-indigo-600 font-semibold">productId</code> with condition <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">Equals</code> matching column <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-700">productID</code>, executing the API with <code class="bg-white px-1.5 py-0.5 rounded border border-slate-200 text-emerald-600">productId = 1</code> will filter the mock dataset and return that exact product!
+                    </div>
+                </div>
+
+                <div id="parametersContainer" class="space-y-2.5">
+                    <!-- Dynamic parameter rows will be injected here -->
+                </div>
+            </div>
+
+            <!-- Card 4: Excel Upload -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">4. Mock Dataset (.xlsx Excel File)</h2>
+                        <p class="text-xs text-slate-500">Upload your spreadsheet containing the mock records (Row 1 is headers).</p>
+                    </div>
+                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">Step 4</span>
+                </div>
+
+                <div class="relative border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-6 text-center transition bg-slate-50/50 hover:bg-indigo-50/20">
+                    <input type="file" id="excelFile" accept=".xlsx" required
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelected(this)">
+                    <div class="space-y-2">
+                        <div class="w-12 h-12 mx-auto rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xl">
+                            📊
+                        </div>
+                        <div id="fileInfoText">
+                            <span class="text-sm font-bold text-slate-800">Click or drag & drop Excel workbook (.xlsx)</span>
+                            <p class="text-xs text-slate-500 mt-1">Supports datasets with 1,000+ rows</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" id="submitBtn" class="w-full py-4 gradient-btn text-white font-bold text-base rounded-2xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
+                <span id="btnIcon">🚀</span>
+                <span id="btnText">Generate & Deploy Dynamic Mock API</span>
+            </button>
+        </form>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="mt-8 hidden space-y-4">
+            <div id="resultMessage" class="p-5 rounded-2xl text-sm border shadow-sm"></div>
+
+            <div id="actionToolbar" class="flex flex-wrap items-center gap-3">
+                <a id="testRouteLink" href="#" target="_blank" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow hover:bg-indigo-700 transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    Test Live Route
+                </a>
+                <a href="/swagger" target="_blank" class="px-4 py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold shadow hover:bg-slate-900 transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    Inspect in Swagger UI
+                </a>
+                <button type="button" onclick="copyGeneratedCode()" class="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition flex items-center gap-1.5">
+                    📋 Copy C# Code
+                </button>
+            </div>
+
+            <div id="codeContainer" class="bg-slate-900 rounded-2xl p-5 shadow-lg border border-slate-800 text-slate-200">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                    <span class="text-xs font-mono text-indigo-400 font-semibold">Generated In-Memory C# Controller</span>
+                    <span class="text-xs text-slate-400">Roslyn Dynamic Assembly</span>
+                </div>
+                <pre class="overflow-x-auto text-xs leading-relaxed max-h-[32rem] text-emerald-400"><code id="codeOutput"></code></pre>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Default initial setup
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProductPreset();
+        });
+
+        function loadProductPreset() {
+            const propsContainer = document.getElementById('propertiesContainer');
+            propsContainer.innerHTML = '';
+            addPropertyRow("productID", "int");
+            addPropertyRow("name", "string");
+            addPropertyRow("price", "decimal");
+            addPropertyRow("category", "string");
+
+            const paramsContainer = document.getElementById('parametersContainer');
+            paramsContainer.innerHTML = '';
+            addParameterRow("productId", "int", "productID", "Equals", false);
+        }
+
+        function addPropertyRow(name = "", type = "string") {
+            const container = document.getElementById('propertiesContainer');
+            const row = document.createElement('div');
+            row.className = "flex gap-2.5 items-center property-row bg-slate-50/70 p-2 rounded-xl border border-slate-200/70";
+            row.innerHTML = `
+                <div class="flex-1">
+                    <input type="text" placeholder="Excel Header Name (e.g. productID)" value="${name}" 
+                        class="prop-name w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required oninput="refreshTargetColumnDropdowns()">
+                </div>
+                <div class="w-44">
+                    <select class="prop-type w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="string" ${type === 'string' ? 'selected' : ''}>string (Text)</option>
+                        <option value="int" ${type === 'int' ? 'selected' : ''}>int (Integer)</option>
+                        <option value="decimal" ${type === 'decimal' ? 'selected' : ''}>decimal (Money/Amount)</option>
+                        <option value="double" ${type === 'double' ? 'selected' : ''}>double (Floating)</option>
+                        <option value="bool" ${type === 'bool' ? 'selected' : ''}>bool (Boolean)</option>
+                        <option value="datetime" ${type === 'datetime' ? 'selected' : ''}>datetime (Date/Time)</option>
+                    </select>
+                </div>
+                <button type="button" onclick="this.closest('.property-row').remove(); refreshTargetColumnDropdowns();" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Remove column">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            `;
+            container.appendChild(row);
+            refreshTargetColumnDropdowns();
+        }
+
+        function getDefinedPropertyNames() {
+            const names = [];
+            document.querySelectorAll('.property-row .prop-name').forEach(inp => {
+                const val = inp.value.trim();
+                if (val) names.push(val);
+            });
+            return names;
+        }
+
+        function refreshTargetColumnDropdowns() {
+            const colNames = getDefinedPropertyNames();
+            document.querySelectorAll('.param-target').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">(Auto-match by name)</option>';
+                colNames.forEach(col => {
+                    const opt = document.createElement('option');
+                    opt.value = col;
+                    opt.innerText = col;
+                    if (col.toLowerCase() === currentVal.toLowerCase() || (!currentVal && col.toLowerCase() === select.dataset.default?.toLowerCase())) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
+            });
+        }
+
+        function addParameterRow(name = "", type = "int", targetCol = "", matchMode = "Equals", isRequired = false) {
+            const container = document.getElementById('parametersContainer');
+            const row = document.createElement('div');
+            row.className = "grid grid-cols-1 md:grid-cols-12 gap-2 items-center parameter-row bg-slate-50/80 p-2.5 rounded-xl border border-slate-200";
+            
+            const cols = getDefinedPropertyNames();
+            let optionsHtml = '<option value="">(Auto-match by name)</option>';
+            cols.forEach(col => {
+                const sel = (col.toLowerCase() === (targetCol || name).toLowerCase()) ? 'selected' : '';
+                optionsHtml += `<option value="${col}" ${sel}>${col}</option>`;
+            });
+
+            row.innerHTML = `
+                <div class="md:col-span-3">
+                    <input type="text" placeholder="Parameter Name (e.g. productId)" value="${name}" 
+                        class="param-name w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+                </div>
+                <div class="md:col-span-2">
+                    <select class="param-type w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="int" ${type === 'int' ? 'selected' : ''}>int</option>
+                        <option value="string" ${type === 'string' ? 'selected' : ''}>string</option>
+                        <option value="decimal" ${type === 'decimal' ? 'selected' : ''}>decimal</option>
+                        <option value="double" ${type === 'double' ? 'selected' : ''}>double</option>
+                        <option value="bool" ${type === 'bool' ? 'selected' : ''}>bool</option>
+                        <option value="datetime" ${type === 'datetime' ? 'selected' : ''}>datetime</option>
+                    </select>
+                </div>
+                <div class="md:col-span-3">
+                    <select class="param-target w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none" data-default="${targetCol}">
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <select class="param-match w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="Equals" ${matchMode === 'Equals' ? 'selected' : ''}>Equals (==)</option>
+                        <option value="Contains" ${matchMode === 'Contains' ? 'selected' : ''}>Contains (Text)</option>
+                        <option value="StartsWith" ${matchMode === 'StartsWith' ? 'selected' : ''}>StartsWith</option>
+                        <option value="GreaterThan" ${matchMode === 'GreaterThan' ? 'selected' : ''}>Greater (>)</option>
+                        <option value="LessThan" ${matchMode === 'LessThan' ? 'selected' : ''}>Less (<)</option>
+                        <option value="GreaterThanOrEqual" ${matchMode === 'GreaterThanOrEqual' ? 'selected' : ''}>GreaterOrEqual (>=)</option>
+                        <option value="LessThanOrEqual" ${matchMode === 'LessThanOrEqual' ? 'selected' : ''}>LessOrEqual (<=)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1 flex justify-center">
+                    <label class="flex items-center gap-1 cursor-pointer text-xs font-semibold text-slate-600" title="Is this parameter required?">
+                        <input type="checkbox" class="param-required rounded text-indigo-600 focus:ring-indigo-500" ${isRequired ? 'checked' : ''}>
+                        Req
+                    </label>
+                </div>
+                <div class="md:col-span-1 flex justify-end">
+                    <button type="button" onclick="this.closest('.parameter-row').remove()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Remove parameter">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+        }
+
+        function autoGenerateFiltersFromColumns() {
+            const container = document.getElementById('parametersContainer');
+            container.innerHTML = '';
+            document.querySelectorAll('.property-row').forEach(row => {
+                const name = row.querySelector('.prop-name').value.trim();
+                const type = row.querySelector('.prop-type').value;
+                if (name) {
+                    addParameterRow(name, type, name, (type === 'string' ? 'Contains' : 'Equals'), false);
+                }
+            });
+        }
+
+        function handleFileSelected(input) {
+            const fileInfoText = document.getElementById('fileInfoText');
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const sizeKb = (file.size / 1024).toFixed(1);
+                fileInfoText.innerHTML = `
+                    <span class="text-sm font-bold text-emerald-700">✓ Selected: ${file.name}</span>
+                    <p class="text-xs text-slate-500 mt-1">${sizeKb} KB - Ready to upload and parse</p>
+                `;
+            }
+        }
+
+        function copyGeneratedCode() {
+            const code = document.getElementById('codeOutput').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                alert("C# code copied to clipboard!");
+            });
+        }
+
+        document.getElementById('apiForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnText = document.getElementById('btnText');
+
+            submitBtn.disabled = true;
+            btnIcon.innerText = "⏳";
+            btnText.innerText = "Parsing Excel, Compiling C# & Injecting into Swagger...";
+
+            // 1. Gather Response Properties
+            const responseProps = {};
+            document.querySelectorAll('.property-row').forEach(row => {
+                const key = row.querySelector('.prop-name').value.trim();
+                const val = row.querySelector('.prop-type').value;
+                if (key) responseProps[key] = val;
+            });
+
+            // 2. Gather Request Parameters / Filters
+            const requestParams = [];
+            document.querySelectorAll('.parameter-row').forEach(row => {
+                const pName = row.querySelector('.param-name').value.trim();
+                const pType = row.querySelector('.param-type').value;
+                const pTarget = row.querySelector('.param-target').value.trim();
+                const pMatch = row.querySelector('.param-match').value;
+                const pReq = row.querySelector('.param-required').checked;
+
+                if (pName) {
+                    requestParams.push({
+                        Name: pName,
+                        Type: pType,
+                        TargetProperty: pTarget || pName,
+                        MatchMode: pMatch,
+                        IsRequired: pReq
+                    });
+                }
+            });
+
+            const selectedFormat = document.querySelector('input[name="responseFormat"]:checked')?.value || "PaginatedList";
+            const routeVal = document.getElementById('route').value.trim();
+            const methodVal = document.getElementById('httpMethod').value;
+
+            const formData = new FormData();
+            formData.append('ApiName', document.getElementById('apiName').value);
+            formData.append('Route', routeVal);
+            formData.append('HttpMethod', methodVal);
+            formData.append('ResponseFormat', selectedFormat);
+            formData.append('ResponsePropertiesJson', JSON.stringify(responseProps));
+            formData.append('RequestParametersJson', JSON.stringify(requestParams));
+            formData.append('ExcelFile', document.getElementById('excelFile').files[0]);
+
+            const resultSection = document.getElementById('resultSection');
+            const resultMessage = document.getElementById('resultMessage');
+            const codeContainer = document.getElementById('codeContainer');
+            const codeOutput = document.getElementById('codeOutput');
+            const testRouteLink = document.getElementById('testRouteLink');
+
+            resultSection.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/generator/addApi', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultMessage.className = "p-5 rounded-2xl text-sm bg-emerald-50 text-emerald-900 border border-emerald-200/80 shadow-sm";
+                    
+                    let filterSummary = requestParams.length > 0 
+                        ? `Configured with <strong>${requestParams.length}</strong> input filter parameter(s): <code>${requestParams.map(p => p.Name).join(', ')}</code>.`
+                        : `No specific input parameters configured (serves entire mock dataset).`;
+
+                    resultMessage.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="text-xl">🎉</span>
+                            <div class="space-y-1">
+                                <h4 class="font-extrabold text-emerald-950 text-base">API Successfully Created and Hot-Reloaded!</h4>
+                                <p class="text-emerald-800">${data.message}</p>
+                                <p class="text-xs text-emerald-700">${filterSummary}</p>
+                                <div class="mt-2 text-xs font-mono bg-white/70 p-2 rounded-lg border border-emerald-200 text-emerald-900">
+                                    <strong>Live Endpoint:</strong> [${methodVal}] /${routeVal.replace(/^\/+/, '')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    testRouteLink.href = `/${routeVal.replace(/^\/+/, '')}`;
+                    codeOutput.innerText = data.generatedCode;
+                    codeContainer.classList.remove('hidden');
+
+                    // Scroll down to result
+                    resultSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    resultMessage.className = "p-5 rounded-2xl text-sm bg-rose-50 text-rose-900 border border-rose-200 shadow-sm";
+                    resultMessage.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="text-xl">⚠️</span>
+                            <div>
+                                <h4 class="font-bold text-rose-950">Compilation / Registration Failed</h4>
+                                <pre class="mt-2 text-xs overflow-x-auto bg-white/80 p-3 rounded-lg border border-rose-200 text-rose-800">${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        </div>
+                    `;
+                    codeContainer.classList.add('hidden');
+                }
+            } catch (err) {
+                resultMessage.className = "p-5 rounded-2xl text-sm bg-rose-50 text-rose-900 border border-rose-200 shadow-sm";
+                resultMessage.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <span class="text-xl">❌</span>
+                        <div>
+                            <h4 class="font-bold text-rose-950">Network Request Error</h4>
+                            <p class="text-rose-800 text-xs mt-1">${err.message}</p>
+                        </div>
+                    </div>
+                `;
+                codeContainer.classList.add('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                btnIcon.innerText = "🚀";
+                btnText.innerText = "Generate & Deploy Dynamic Mock API";
+            }
+        });
+    </script>
+</body>
+</html>
