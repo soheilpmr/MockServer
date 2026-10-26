@@ -201,6 +201,7 @@ namespace MockServer.Services
             sb.AppendLine("using System.Collections.Generic;");
             sb.AppendLine("using System.Linq;");
             sb.AppendLine("using System.Text.Json;");
+            sb.AppendLine("using System.Text.Json.Serialization;");
             sb.AppendLine("using Microsoft.AspNetCore.Mvc;");
             sb.AppendLine("using Microsoft.AspNetCore.Hosting;");
             sb.AppendLine();
@@ -214,6 +215,8 @@ namespace MockServer.Services
             {
                 string pName = SanitizeIdentifier(prop.Key);
                 string pType = MapType(prop.Value);
+                string escapedKey = prop.Key.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                sb.AppendLine($"        [JsonPropertyName(\"{escapedKey}\")]");
                 sb.AppendLine($"        public {pType} {pName} {{ get; set; }} = default!;");
             }
             sb.AppendLine("    }");
@@ -228,6 +231,8 @@ namespace MockServer.Services
                 {
                     string pName = SanitizeIdentifier(param.Name);
                     string pType = MapNullableType(param.Type);
+                    string escapedParam = param.Name.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                    sb.AppendLine($"        [JsonPropertyName(\"{escapedParam}\")]");
                     sb.AppendLine($"        public {pType} {pName} {{ get; set; }}");
                 }
                 sb.AppendLine("    }");
@@ -306,8 +311,13 @@ namespace MockServer.Services
                 foreach (var param in requestParams!)
                 {
                     string paramProp = SanitizeIdentifier(param.Name);
+                    string normTarget = NormalizeIdentifier(param.TargetProperty ?? param.Name);
+                    string normName = NormalizeIdentifier(param.Name);
+
                     string? matchedKey = responseProps.Keys.FirstOrDefault(k => k.Equals(param.TargetProperty ?? param.Name, StringComparison.OrdinalIgnoreCase))
-                        ?? responseProps.Keys.FirstOrDefault(k => k.Equals(param.Name, StringComparison.OrdinalIgnoreCase));
+                        ?? responseProps.Keys.FirstOrDefault(k => k.Equals(param.Name, StringComparison.OrdinalIgnoreCase))
+                        ?? responseProps.Keys.FirstOrDefault(k => NormalizeIdentifier(k).Equals(normTarget, StringComparison.OrdinalIgnoreCase))
+                        ?? responseProps.Keys.FirstOrDefault(k => NormalizeIdentifier(k).Equals(normName, StringComparison.OrdinalIgnoreCase));
 
                     if (matchedKey == null) continue;
 
@@ -318,20 +328,21 @@ namespace MockServer.Services
                     switch (targetType)
                     {
                         case "string":
+                            sb.AppendLine($"                var {paramProp}_val = filter.{paramProp} ?? Request.Query[\"{paramProp}\"].FirstOrDefault() ?? Request.Query[\"{param.Name}\"].FirstOrDefault();");
                             if (mode.Equals("Contains", StringComparison.OrdinalIgnoreCase))
                             {
-                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace(filter.{paramProp}))");
-                                sb.AppendLine($"                    query = query.Where(x => x.{targetProp} != null && x.{targetProp}.Contains(filter.{paramProp}, StringComparison.OrdinalIgnoreCase));");
+                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace({paramProp}_val))");
+                                sb.AppendLine($"                    query = query.Where(x => x.{targetProp} != null && x.{targetProp}.Contains({paramProp}_val.Trim(), StringComparison.OrdinalIgnoreCase));");
                             }
                             else if (mode.Equals("StartsWith", StringComparison.OrdinalIgnoreCase))
                             {
-                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace(filter.{paramProp}))");
-                                sb.AppendLine($"                    query = query.Where(x => x.{targetProp} != null && x.{targetProp}.StartsWith(filter.{paramProp}, StringComparison.OrdinalIgnoreCase));");
+                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace({paramProp}_val))");
+                                sb.AppendLine($"                    query = query.Where(x => x.{targetProp} != null && x.{targetProp}.StartsWith({paramProp}_val.Trim(), StringComparison.OrdinalIgnoreCase));");
                             }
                             else
                             {
-                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace(filter.{paramProp}))");
-                                sb.AppendLine($"                    query = query.Where(x => string.Equals(x.{targetProp}, filter.{paramProp}, StringComparison.OrdinalIgnoreCase));");
+                                sb.AppendLine($"                if (!string.IsNullOrWhiteSpace({paramProp}_val))");
+                                sb.AppendLine($"                    query = query.Where(x => x.{targetProp} != null && string.Equals(x.{targetProp}.Trim(), {paramProp}_val.Trim(), StringComparison.OrdinalIgnoreCase));");
                             }
                             break;
 
@@ -461,5 +472,8 @@ namespace MockServer.Services
             if (char.IsDigit(clean[0])) clean = "_" + clean;
             return clean;
         }
+
+        private static string NormalizeIdentifier(string raw) =>
+            new string(raw.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
     }
 }
